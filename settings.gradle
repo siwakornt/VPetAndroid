@@ -1,2 +1,10 @@
 rootProject.name = "VPetAndroid"
 include ':app'
+
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
