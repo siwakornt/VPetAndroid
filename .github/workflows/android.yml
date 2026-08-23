@@ -25,6 +25,6 @@ jobs:
     - name: Build with Gradle
       run: |
         if [ ! -f gradlew ]; then
-          gradle wrapper
+          gradle wrapper --gradle-version 8.4
         fi
         ./gradlew assembleDebug
