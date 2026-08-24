@@ -44,26 +44,26 @@ fun VpetAnimationView() {
 
     LaunchedEffect(Unit) {
         try {
+            // ตรวจสอบโฟลเดอร์ให้ครอบคลุม
             val assetManager = context.assets
-            val ideFolders = assetManager.list("vpetas/IDEL") ?: emptyArray()
-            val targetFolder = ideFolders.firstOrNull { it.contains("Nomal") || it.contains("Normal") } ?: ideFolders.firstOrNull()
+            val idelList = assetManager.list("vpetas/IDEL") ?: emptyArray()
+            // ลองหาโฟลเดอร์แบบยืดหยุ่นมากขึ้น
+            val targetFolder = idelList.firstOrNull { it.contains("Nomal", ignoreCase = true) || it.contains("Normal", ignoreCase = true) }
+                ?: idelList.firstOrNull()
+                ?: "Default" // Fallback หาก IDEL ว่างเปล่าหรือหาไม่เจอ
 
-            if (targetFolder != null) {
-                val files = assetManager.list("vpetas/IDEL/$targetFolder")?.sorted() ?: emptyList()
+            val path = "vpetas/IDEL/$targetFolder"
+            val files = assetManager.list(path)?.filter { it.endsWith(".png") }?.sorted() ?: emptyList()
+            if (files.isNotEmpty()) {
                 val bitmaps = mutableListOf<android.graphics.Bitmap>()
                 for (file in files) {
-                    if (file.endsWith(".png")) {
-                        val inputStream = assetManager.open("vpetas/IDEL/$targetFolder/$file")
-                        val bitmap = BitmapFactory.decodeStream(inputStream)
-                        if (bitmap != null) {
-                            bitmaps.add(bitmap)
-                        }
-                        inputStream.close()
-                    }
+                    val inputStream = assetManager.open("$path/$file")
+                    BitmapFactory.decodeStream(inputStream)?.let { bitmaps.add(it) }
+                    inputStream.close()
                 }
                 frameBitmaps = bitmaps
             } else {
-                errorMessage = "ไม่พบโฟลเดอร์ย่อยใน IDEL"
+                errorMessage = "ไม่พบไฟล์ .png ในโฟลเดอร์ $targetFolder"
             }
         } catch (e: IOException) {
             errorMessage = e.localizedMessage
