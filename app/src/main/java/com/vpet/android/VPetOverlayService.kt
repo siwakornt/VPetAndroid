@@ -9,8 +9,15 @@ import android.view.Gravity
 import android.view.WindowManager
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.delay
+import kotlin.random.Random
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -47,13 +54,33 @@ class VPetOverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             setViewTreeSavedStateRegistryOwner(this@VPetOverlayService)
             setContent {
                 MaterialTheme {
-                    Box(modifier = Modifier.pointerInput(Unit) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            params.x += dragAmount.x.toInt()
-                            params.y += dragAmount.y.toInt()
-                            windowManager.updateViewLayout(overlayView, params)
+                    var isDragging by remember { mutableStateOf(false) }
+
+                    LaunchedEffect(isDragging) {
+                        if (!isDragging) {
+                            while (true) {
+                                delay(2000L)
+                                val dx = Random.nextInt(-100, 101)
+                                val dy = Random.nextInt(-100, 101)
+                                params.x += dx
+                                params.y += dy
+                                windowManager.updateViewLayout(overlayView, params)
+                            }
                         }
+                    }
+
+                    Box(modifier = Modifier.pointerInput(Unit) {
+                        detectDragGestures(
+                            onDragStart = { isDragging = true },
+                            onDragEnd = { isDragging = false },
+                            onDragCancel = { isDragging = false },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                params.x += dragAmount.x.toInt()
+                                params.y += dragAmount.y.toInt()
+                                windowManager.updateViewLayout(overlayView, params)
+                            }
+                        )
                     }) {
                         VpetAnimationView()
                     }
