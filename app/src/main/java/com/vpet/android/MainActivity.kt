@@ -44,16 +44,19 @@ fun VpetAnimationView() {
 
     LaunchedEffect(Unit) {
         try {
-            // ตรวจสอบโฟลเดอร์ให้ครอบคลุม
             val assetManager = context.assets
-            val idelList = assetManager.list("vpetas/IDEL") ?: emptyArray()
-            // ลองหาโฟลเดอร์แบบยืดหยุ่นมากขึ้น
-            val targetFolder = idelList.firstOrNull { it.contains("Nomal", ignoreCase = true) || it.contains("Normal", ignoreCase = true) }
-                ?: idelList.firstOrNull()
-                ?: "Default" // Fallback หาก IDEL ว่างเปล่าหรือหาไม่เจอ
+            val states = assetManager.list("vpetas")?.filter { it != "Default" } ?: emptyList()
+            val selectedState = states.randomOrNull() ?: "Default"
 
-            val path = "vpetas/IDEL/$targetFolder"
+            val subFolders = assetManager.list("vpetas/$selectedState") ?: emptyArray()
+            val selectedSub = subFolders.randomOrNull() ?: ""
+
+            val animationSequences = assetManager.list("vpetas/$selectedState/$selectedSub") ?: emptyArray()
+            val selectedSeq = animationSequences.randomOrNull() ?: ""
+
+            val path = "vpetas/$selectedState/$selectedSub/$selectedSeq"
             val files = assetManager.list(path)?.filter { it.endsWith(".png") }?.sorted() ?: emptyList()
+
             if (files.isNotEmpty()) {
                 val bitmaps = mutableListOf<android.graphics.Bitmap>()
                 for (file in files) {
@@ -63,7 +66,7 @@ fun VpetAnimationView() {
                 }
                 frameBitmaps = bitmaps
             } else {
-                errorMessage = "ไม่พบไฟล์ .png ในโฟลเดอร์ $targetFolder"
+                errorMessage = "ไม่พบไฟล์ใน $path"
             }
         } catch (e: IOException) {
             errorMessage = e.localizedMessage
