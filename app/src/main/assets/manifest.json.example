@@ -1,0 +1,17 @@
+{
+  "name": "Custom Pet",
+  "author": "User",
+  "version": "1.0",
+  "animations": {
+    "IDEL": {
+      "folder": "IDEL",
+      "frameCount": 12,
+      "frameDuration": 125
+    },
+    "Walk": {
+      "folder": "Walk",
+      "frameCount": 8,
+      "frameDuration": 150
+    }
+  }
+}
