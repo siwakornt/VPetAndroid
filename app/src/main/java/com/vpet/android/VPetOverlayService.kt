@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.material3.MaterialTheme
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 import androidx.compose.ui.platform.ComposeView
@@ -29,6 +30,14 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 
 class VPetOverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
+
+    private lateinit var windowManager: WindowManager
+    private lateinit var overlayView: ComposeView
+    private val lifecycleRegistry = LifecycleRegistry(this)
+    private val savedStateRegistryController = SavedStateRegistryController.create(this)
+
+    override val lifecycle: Lifecycle = lifecycleRegistry
+    override val savedStateRegistry: SavedStateRegistry = savedStateRegistryController.savedStateRegistry
 
     private var params = WindowManager.LayoutParams(
         WindowManager.LayoutParams.WRAP_CONTENT,
