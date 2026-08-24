@@ -69,7 +69,7 @@ class VPetOverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
         windowManager.addView(overlayView, params)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.RESUME)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
