@@ -40,18 +40,23 @@ fun MainScreen() {
     var errorMessage by remember { mutableStateOf<String?>("") }
     var happiness by remember { mutableStateOf(100) }
     var importStatus by remember { mutableStateOf("") }
+    var installedMods by remember { mutableStateOf(ModManager.getInstalledMods(context)) }
+    var selectedMod by remember { mutableStateOf(installedMods.firstOrNull() ?: "") }
+    var selectedAnimation by remember { mutableStateOf("IDEL") }
 
     val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             try {
                 val inputStream = context.contentResolver.openInputStream(uri)
-                val outputDir = File(context.filesDir, "custom_pet")
-                if (outputDir.exists()) outputDir.deleteRecursively()
-                outputDir.mkdirs()
+                val modName = "mod_" + System.currentTimeMillis()
+                val modsDir = File(context.filesDir, "mods/$modName")
+                modsDir.mkdirs()
 
                 if (inputStream != null) {
-                    VpaExtractor.extractVpa(context, inputStream, outputDir)
-                    importStatus = "นำเข้าสำเร็จ!"
+                    VpaExtractor.extractVpa(context, inputStream, modsDir)
+                    importStatus = "นำเข้าสำเร็จ: $modName"
+                    installedMods = ModManager.getInstalledMods(context)
+                    if (selectedMod.isEmpty()) selectedMod = modName
                 }
             } catch (e: Exception) {
                 importStatus = "นำเข้าล้มเหลว: ${e.localizedMessage}"
@@ -59,34 +64,33 @@ fun MainScreen() {
         }
     }
 
-    LaunchedEffect(Unit) {
-        try {
-            val assetManager = context.assets
-            val states = assetManager.list("vpetas")?.filter { it != "Default" } ?: emptyList()
-            val selectedState = states.randomOrNull() ?: "Default"
-
-            val subFolders = assetManager.list("vpetas/$selectedState") ?: emptyArray()
-            val selectedSub = subFolders.randomOrNull() ?: ""
-
-            val animationSequences = assetManager.list("vpetas/$selectedState/$selectedSub") ?: emptyArray()
-            val selectedSeq = animationSequences.randomOrNull() ?: ""
-
-            val path = "vpetas/$selectedState/$selectedSub/$selectedSeq"
-            val files = assetManager.list(path)?.filter { it.endsWith(".png") }?.sorted() ?: emptyList()
-
-            if (files.isNotEmpty()) {
-                val bitmaps = mutableListOf<android.graphics.Bitmap>()
-                for (file in files) {
-                    val inputStream = assetManager.open("$path/$file")
-                    BitmapFactory.decodeStream(inputStream)?.let { bitmaps.add(it) }
-                    inputStream.close()
-                }
+    LaunchedEffect(selectedMod, selectedAnimation) {
+        if (selectedMod.isNotEmpty()) {
+            val bitmaps = ModManager.loadModFrames(context, selectedMod, selectedAnimation)
+            if (bitmaps.isNotEmpty()) {
                 frameBitmaps = bitmaps
+                errorMessage = null
             } else {
-                errorMessage = "ไม่พบไฟล์ใน $path"
+                errorMessage = "ไม่พบเฟรมแอนิเมชันสำหรับ $selectedAnimation ใน mod $selectedMod"
             }
-        } catch (e: IOException) {
-            errorMessage = e.localizedMessage
+        } else {
+            // Fallback ไปใช้ assets เดิม
+            try {
+                val assetManager = context.assets
+                val path = "vpetas/IDEL"
+                val files = assetManager.list(path)?.filter { it.endsWith(".png") }?.sorted() ?: emptyList()
+                if (files.isNotEmpty()) {
+                    val bitmaps = mutableListOf<android.graphics.Bitmap>()
+                    for (file in files) {
+                        assetManager.open("$path/$file").use { inputStream ->
+                            BitmapFactory.decodeStream(inputStream)?.let { bitmaps.add(it) }
+                        }
+                    }
+                    frameBitmaps = bitmaps
+                }
+            } catch (e: IOException) {
+                errorMessage = e.localizedMessage
+            }
         }
     }
 
@@ -101,7 +105,7 @@ fun MainScreen() {
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (frameBitmaps.isNotEmpty()) {
-            val imageBitmap = frameBitmaps[currentFrame].asImageBitmap()
+            val imageBitmap = frameBitmaps[currentFrame % frameBitmaps.size].asImageBitmap()
             Canvas(modifier = Modifier
                 .size(250.dp)
                 .pointerInput(Unit) {
@@ -115,13 +119,25 @@ fun MainScreen() {
             Text(text = errorMessage ?: "กำลังโหลดอนิเมชัน VPet...")
         }
 
-        Column(modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (installedMods.isNotEmpty()) {
+                Text("เลือก Mod: $selectedMod", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
             Button(onClick = { launcher.launch("application/zip") }) {
                 Text("Import Character (.vpa)")
             }
+
             if (importStatus.isNotEmpty()) {
                 Text(text = importStatus, style = MaterialTheme.typography.bodySmall)
             }
+
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = "ความสุข: $happiness")
         }
