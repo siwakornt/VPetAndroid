@@ -55,13 +55,15 @@ class VPetOverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             setContent {
                 MaterialTheme {
                     var isDragging by remember { mutableStateOf(false) }
+                    var offsetX by remember { mutableStateOf(0f) }
+                    var offsetY by remember { mutableStateOf(0f) }
 
                     LaunchedEffect(isDragging) {
                         if (!isDragging) {
                             while (true) {
                                 delay(2000L)
-                                val dx = Random.nextInt(-100, 101)
-                                val dy = Random.nextInt(-100, 101)
+                                val dx = Random.nextInt(-50, 51)
+                                val dy = Random.nextInt(-50, 51)
                                 params.x += dx
                                 params.y += dy
                                 windowManager.updateViewLayout(overlayView, params)
@@ -69,19 +71,21 @@ class VPetOverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
                         }
                     }
 
-                    Box(modifier = Modifier.pointerInput(Unit) {
-                        detectDragGestures(
-                            onDragStart = { isDragging = true },
-                            onDragEnd = { isDragging = false },
-                            onDragCancel = { isDragging = false },
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                params.x += dragAmount.x.toInt()
-                                params.y += dragAmount.y.toInt()
-                                windowManager.updateViewLayout(overlayView, params)
-                            }
-                        )
-                    }) {
+                    Box(modifier = Modifier
+                        .pointerInput(Unit) {
+                            detectDragGestures(
+                                onDragStart = { isDragging = true },
+                                onDragEnd = { isDragging = false },
+                                onDragCancel = { isDragging = false },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    params.x += dragAmount.x.toInt()
+                                    params.y += dragAmount.y.toInt()
+                                    windowManager.updateViewLayout(overlayView, params)
+                                }
+                            )
+                        }
+                    ) {
                         VpetAnimationView()
                     }
                 }
