@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
-# Termux gradle wrapper fallback
+# Use system gradle if available, otherwise fallback
 gradle assembleDebug

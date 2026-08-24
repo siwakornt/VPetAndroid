@@ -78,14 +78,25 @@ fun VpetAnimationView() {
         }
     }
 
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+
+// ใน VpetAnimationView
+    var happiness by remember { mutableStateOf(100) }
+
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (frameBitmaps.isNotEmpty()) {
             val imageBitmap = frameBitmaps[currentFrame].asImageBitmap()
-            Canvas(modifier = Modifier.size(250.dp)) {
+            Canvas(modifier = Modifier
+                .size(250.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        happiness = (happiness + 10).coerceAtMost(100)
+                    })
+                }) {
                 drawImage(imageBitmap)
             }
-        } else {
-            Text(text = errorMessage ?: "กำลังโหลดอนิเมชัน VPet...")
         }
+        Text(text = "ความสุข: $happiness", modifier = Modifier.align(Alignment.BottomCenter))
     }
 }
