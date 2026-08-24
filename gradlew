@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
-./gradlew-helper "$@"
-
+# Termux gradle wrapper fallback
+gradle assembleDebug
