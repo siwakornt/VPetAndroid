@@ -1,145 +1,117 @@
 package com.vpet.android
 
-import android.graphics.BitmapFactory
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
+import androidx.core.content.ContextCompat
+import com.vpet.android.mod.PetModManager
+import com.vpet.android.service.PetService
 import java.io.File
-import java.io.IOException
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+            startActivityForResult(intent, 100)
+        }
+
         setContent {
             MaterialTheme {
-                MainScreen()
+                MainScreen(
+                    onStartPet = { startPetService() },
+                    onStopPet = { stopPetService() }
+                )
             }
         }
+    }
+
+    private fun startPetService() {
+        val intent = Intent(this, PetService::class.java)
+        ContextCompat.startForegroundService(this, intent)
+    }
+
+    private fun stopPetService() {
+        val intent = Intent(this, PetService::class.java)
+        stopService(intent)
     }
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(onStartPet: () -> Unit, onStopPet: () -> Unit) {
     val context = LocalContext.current
-    var frameBitmaps by remember { mutableStateOf<List<android.graphics.Bitmap>>(emptyList()) }
-    var currentFrame by remember { mutableStateOf(0) }
-    var errorMessage by remember { mutableStateOf<String?>("") }
-    var happiness by remember { mutableStateOf(100) }
-    var importStatus by remember { mutableStateOf("") }
-    var installedMods by remember { mutableStateOf(ModManager.getInstalledMods(context)) }
-    var selectedMod by remember { mutableStateOf(installedMods.firstOrNull() ?: "") }
-    var selectedAnimation by remember { mutableStateOf("IDEL") }
+    val modManager = remember { PetModManager(context) }
+    var mods by remember { mutableStateOf(modManager.getAvailableMods()) }
+    var selectedMod by remember { mutableStateOf<File?>(null) }
+    var showSettings by remember { mutableStateOf(false) }
 
-    val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
-        uri?.let {
-            try {
-                val inputStream = context.contentResolver.openInputStream(uri)
-                val modName = "mod_" + System.currentTimeMillis()
-                val modsDir = File(context.filesDir, "mods/$modName")
-                modsDir.mkdirs()
-
-                if (inputStream != null) {
-                    VpaExtractor.extractVpa(context, inputStream, modsDir)
-                    importStatus = "นำเข้าสำเร็จ: $modName"
-                    installedMods = ModManager.getInstalledMods(context)
-                    if (selectedMod.isEmpty()) selectedMod = modName
-                }
-            } catch (e: Exception) {
-                importStatus = "นำเข้าล้มเหลว: ${e.localizedMessage}"
-            }
-        }
-    }
-
-    LaunchedEffect(selectedMod, selectedAnimation) {
-        if (selectedMod.isNotEmpty()) {
-            val bitmaps = ModManager.loadModFrames(context, selectedMod, selectedAnimation)
-            if (bitmaps.isNotEmpty()) {
-                frameBitmaps = bitmaps
-                errorMessage = null
-            } else {
-                errorMessage = "ไม่พบเฟรมแอนิเมชันสำหรับ $selectedAnimation ใน mod $selectedMod"
-            }
-        } else {
-            // Fallback ไปใช้ assets เดิม
-            try {
-                val assetManager = context.assets
-                val path = "vpetas/IDEL"
-                val files = assetManager.list(path)?.filter { it.endsWith(".png") }?.sorted() ?: emptyList()
-                if (files.isNotEmpty()) {
-                    val bitmaps = mutableListOf<android.graphics.Bitmap>()
-                    for (file in files) {
-                        assetManager.open("$path/$file").use { inputStream ->
-                            BitmapFactory.decodeStream(inputStream)?.let { bitmaps.add(it) }
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Desktop Pet Mod Manager") }) }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+            Text("Select Character:", style = MaterialTheme.typography.titleMedium)
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                modifier = Modifier.weight(1f).padding(vertical = 8.dp)
+            ) {
+                items(mods) { mod ->
+                    Card(
+                        modifier = Modifier.padding(4.dp).clickable { selectedMod = mod },
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
+                            Text(mod.name)
                         }
                     }
-                    frameBitmaps = bitmaps
                 }
-            } catch (e: IOException) {
-                errorMessage = e.localizedMessage
+            }
+
+            if (selectedMod != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Button(onClick = onStartPet) { Text("Start Pet") }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = onStopPet) { Text("Stop Pet") }
+                    IconButton(onClick = { showSettings = true }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
+                }
             }
         }
-    }
 
-    LaunchedEffect(frameBitmaps) {
-        if (frameBitmaps.isNotEmpty()) {
-            while (true) {
-                delay(125L)
-                currentFrame = (currentFrame + 1) % frameBitmaps.size
-            }
-        }
-    }
-
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        if (frameBitmaps.isNotEmpty()) {
-            val imageBitmap = frameBitmaps[currentFrame % frameBitmaps.size].asImageBitmap()
-            Canvas(modifier = Modifier
-                .size(250.dp)
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = {
-                        happiness = (happiness + 10).coerceAtMost(100)
-                    })
-                }) {
-                drawImage(imageBitmap)
-            }
-        } else {
-            Text(text = errorMessage ?: "กำลังโหลดอนิเมชัน VPet...")
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            if (installedMods.isNotEmpty()) {
-                Text("เลือก Mod: $selectedMod", style = MaterialTheme.typography.bodyMedium)
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-
-            Button(onClick = { launcher.launch("application/zip") }) {
-                Text("Import Character (.vpa)")
-            }
-
-            if (importStatus.isNotEmpty()) {
-                Text(text = importStatus, style = MaterialTheme.typography.bodySmall)
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "ความสุข: $happiness")
+        if (showSettings) {
+            AlertDialog(
+                onDismissRequest = { showSettings = false },
+                title = { Text("Character Settings") },
+                text = {
+                    Text("Resize and adjustments will be implemented here.")
+                },
+                confirmButton = {
+                    TextButton(onClick = { showSettings = false }) { Text("Save") }
+                }
+            )
         }
     }
 }
