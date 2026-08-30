@@ -6,12 +6,16 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.http.*
-import kotlinx.serialization.json.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.*
 import java.io.ByteArrayOutputStream
 
 class GeminiClient(private val apiKey: String) {
-    private val client = HttpClient(CIO)
+    private val client = HttpClient(CIO) {
+        install(ContentNegotiation) {
+            json()
+        }
+    }
 
     suspend fun analyzeScreenshot(bitmap: Bitmap): String {
         val outputStream = ByteArrayOutputStream()
