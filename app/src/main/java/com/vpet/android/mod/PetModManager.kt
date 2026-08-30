@@ -28,7 +28,7 @@ class PetModManager(private val context: Context) {
 
     // ค้นหาโฟลเดอร์ Mod ทั้งหมดจากไดเรกทอรี /Android/data/.../mods/ หรือ External Files Dir
     fun getAvailableMods(): List<File> {
-        val externalDir = context.getExternalFilesDir("mods") ?: File(context.filesDir, "mods")
+        val externalDir = File(context.getExternalFilesDir(null), "mods")
         if (!externalDir.exists()) {
             externalDir.mkdirs()
         }
