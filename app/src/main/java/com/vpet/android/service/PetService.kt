@@ -119,7 +119,12 @@ class PetService : Service() {
                     } else {
                         // ถ้าไม่ loop ให้เปลี่ยนเป็น nextAnimation หรือกลับไป idle
                         val next = animData.nextAnimation ?: "idle"
-                        startAnimation(next)
+                        if (next != currentAnimationState) {
+                             startAnimation(next)
+                        } else {
+                             // reset index if loop false and nextAnimation is same
+                             currentFrameIndex = 0
+                        }
                         return
                     }
                 }
