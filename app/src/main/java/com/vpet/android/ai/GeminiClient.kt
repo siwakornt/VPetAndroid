@@ -6,16 +6,13 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import kotlinx.serialization.json.*
 import java.io.ByteArrayOutputStream
 
 class GeminiClient(private val apiKey: String) {
-    private val client = HttpClient(CIO) {
-        install(ContentNegotiation) {
-            json()
-        }
-    }
+    private val client = HttpClient(CIO)
 
     suspend fun analyzeScreenshot(bitmap: Bitmap): String {
         val outputStream = ByteArrayOutputStream()
@@ -50,7 +47,6 @@ class GeminiClient(private val apiKey: String) {
         val responseText = response.bodyAsText()
         val jsonElement = Json.parseToJsonElement(responseText)
 
-        // Extract text response safely
         return try {
             jsonElement.jsonObject["candidates"]
                 ?.jsonArray?.get(0)
