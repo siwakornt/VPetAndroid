@@ -4,8 +4,8 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.vpet.android.R
 import com.vpet.android.utils.AppPreferences
 
 class SettingsActivity : AppCompatActivity() {

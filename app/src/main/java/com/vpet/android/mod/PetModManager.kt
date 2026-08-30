@@ -39,7 +39,7 @@ class PetModManager(private val context: Context) {
     fun loadModConfig(modFolder: File): ModConfig? {
         val configFile = File(modFolder, "config.json")
         if (!configFile.exists()) return null
-        returntry {
+        return try {
             json.decodeFromString<ModConfig>(configFile.readText())
         } catch (e: Exception) {
             null

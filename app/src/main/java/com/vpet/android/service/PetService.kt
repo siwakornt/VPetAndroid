@@ -191,7 +191,7 @@ class PetService : Service() {
                 6 -> { startAnimation("ill"); showBubble("แง... รู้สึกไม่ค่อยสบายเลย"); true }
                 7 -> {
                     val intent = Intent(this, com.vpet.android.ui.SettingsActivity::class.java).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     }
                     startActivity(intent)
                     true
