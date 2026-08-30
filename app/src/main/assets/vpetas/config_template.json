@@ -1,0 +1,43 @@
+{
+  "name": "Advanced Custom Pet",
+  "author": "Developer",
+  "version": "2.0",
+  "fps": 12,
+  "animations": {
+    "idle": {
+      "frames": ["idle/1.png", "idle/2.png", "idle/3.png"],
+      "loop": true
+    },
+    "talk": {
+      "frames": ["talk/1.png", "talk/2.png", "talk/3.png"],
+      "loop": true
+    },
+    "walking": {
+      "frames": ["walk/1.png", "walk/2.png", "walk/3.png", "walk/4.png"],
+      "loop": true
+    },
+    "sleep": {
+      "frames": ["sleep/1.png", "sleep/2.png"],
+      "loop": true
+    },
+    "happy": {
+      "frames": ["happy/1.png", "happy/2.png", "happy/3.png"],
+      "loop": false,
+      "nextAnimation": "idle"
+    },
+    "touch_head": {
+      "frames": ["touch/head_1.png", "touch/head_2.png"],
+      "loop": false,
+      "nextAnimation": "idle"
+    },
+    "touch_body": {
+      "frames": ["touch/body_1.png", "touch/body_2.png"],
+      "loop": false,
+      "nextAnimation": "idle"
+    },
+    "ill": {
+      "frames": ["ill/1.png", "ill/2.png"],
+      "loop": true
+    }
+  }
+}
